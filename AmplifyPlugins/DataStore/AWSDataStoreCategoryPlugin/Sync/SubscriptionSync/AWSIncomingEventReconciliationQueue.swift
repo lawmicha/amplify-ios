@@ -102,6 +102,8 @@ final class AWSIncomingEventReconciliationQueue: IncomingEventReconciliationQueu
         eventReconciliationQueueTopic.send(.paused)
     }
 
+    // offer the 1000 items instead of just one
+    // func offerAll() // ?
     func offer(_ remoteModel: MutationSync<AnyModel>, modelSchema: ModelSchema) {
         guard let queue = reconciliationQueues[modelSchema.name] else {
             // TODO: Error handling

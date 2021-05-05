@@ -35,6 +35,7 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
     private let remoteModel: RemoteModel
     private let modelSchema: ModelSchema
     private var stateMachineSink: AnyCancellable?
+    private var start: DispatchTime?
 
     private let mutationEventPublisher: PassthroughSubject<ReconcileAndLocalSaveOperationEvent, DataStoreError>
     public var publisher: AnyPublisher<ReconcileAndLocalSaveOperationEvent, DataStoreError> {
@@ -69,7 +70,7 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
 
     override func main() {
         log.verbose(#function)
-
+        start = DispatchTime.now()
         guard !isCancelled else {
             return
         }
@@ -140,6 +141,12 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
         }
 
         let queriedAction = Action.queried(remoteModel, localMetadata)
+        if let start = start {
+            let end = DispatchTime.now()
+            let seconds = Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000_000.0
+            print("[ReconcileAndSaveOperation] \(id): query complete: \(seconds)")
+            self.start = end
+        }
         stateMachine.notify(action: queriedAction)
     }
 
@@ -166,7 +173,12 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
         let disposition = RemoteSyncReconciler.reconcile(remoteModel: remoteModel,
                                                          to: localMetadata,
                                                          pendingMutations: pendingMutations)
-
+        if let start = start {
+            let end = DispatchTime.now()
+            let seconds = Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000_000.0
+            print("[ReconcileAndSaveOperation] \(id): reconcile complete: \(seconds)")
+            self.start = end
+        }
         stateMachine.notify(action: .reconciled(disposition))
     }
 
@@ -254,6 +266,12 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
                     return
                 }
                 let inProcessModel = MutationSync(model: anyModel, syncMetadata: remoteModel.syncMetadata)
+                if let start = self.start {
+                    let end = DispatchTime.now()
+                    let seconds = Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000_000.0
+                    print("[ReconcileAndSaveOperation] \(self.id): save model complete: \(seconds)")
+                    self.start = end
+                }
                 self.saveMetadata(storageAdapter: storageAdapter, inProcessModel: inProcessModel)
             }
         }
@@ -280,6 +298,12 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
                 self.stateMachine.notify(action: errorAction)
             case .success(let syncMetadata):
                 let appliedModel = MutationSync(model: inProcessModel.model, syncMetadata: syncMetadata)
+                if let start = self.start {
+                    let end = DispatchTime.now()
+                    let seconds = Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000_000.0
+                    print("[ReconcileAndSaveOperation] \(self.id): save metadata complete: \(seconds)")
+                    self.start = end
+                }
                 self.stateMachine.notify(action: .applied(appliedModel, existsLocally: existsLocally))
             }
         }
@@ -333,6 +357,13 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
     }
 
     private func notifyFinished() {
+        // no longer valid now that delta is calculated on every state
+//        if let start = start {
+//            let end = DispatchTime.now()
+//            let seconds = Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000_000.0
+//            print("[ReconcileAndSaveOperation] \(id): total elapsed time: \(seconds)")
+//        }
+
         mutationEventPublisher.send(completion: .finished)
     }
 

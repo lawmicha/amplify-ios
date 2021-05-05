@@ -107,6 +107,7 @@ final class InitialSyncOperation: AsynchronousOperation {
     }
 
     private func query(lastSyncTime: Int?, nextToken: String? = nil) {
+        let start = DispatchTime.now()
         guard !isCancelled else {
             finish(result: .successfulVoid)
             return
@@ -129,6 +130,10 @@ final class InitialSyncOperation: AsynchronousOperation {
                                                                 lastSync: lastSyncTime)
 
         _ = api.query(request: request) { result in
+            let end = DispatchTime.now()
+            let seconds = Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000_000.0
+            print("[SyncOperation] elapsed time: \(seconds)")
+
             switch result {
             case .failure(let apiError):
                 if self.isAuthSignedOutError(apiError: apiError) {
