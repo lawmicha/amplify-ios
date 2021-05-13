@@ -6,6 +6,7 @@
 //
 
 import Amplify
+import Dispatch
 
 extension MutationEvent {
     static func pendingMutationEvents(forModelId modelId: Model.Identifier,
