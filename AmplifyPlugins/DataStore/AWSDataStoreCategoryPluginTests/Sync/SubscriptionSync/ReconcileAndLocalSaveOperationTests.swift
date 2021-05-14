@@ -87,7 +87,7 @@ class ReconcileAndLocalSaveOperationTests: XCTestCase {
 
         stateMachine.state = .queryingPendingMutations(anyPostMutationSync)
 
-        waitForExpectations(timeout: 1)
+        waitForExpectations(timeout: 10)
     }
 
     func testQueryPendingMutations_error() {

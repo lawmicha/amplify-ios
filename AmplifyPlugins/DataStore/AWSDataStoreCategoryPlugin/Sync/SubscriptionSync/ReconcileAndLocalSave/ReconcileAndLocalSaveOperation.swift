@@ -76,8 +76,20 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
             return
         }
 
+        guard let storageAdapter = storageAdapter else {
+            stateMachine.notify(action: .errored(DataStoreError.nilStorageAdapter()))
+            return
+        }
+
         stopwatch.start()
-        stateMachine.notify(action: .started(remoteModel))
+        do {
+            try storageAdapter.transaction {
+                stateMachine.notify(action: .started(remoteModel))
+            }
+        } catch {
+            let dataStoreError = DataStoreError.invalidOperation(causedBy: error)
+            stateMachine.notify(action: .errored(dataStoreError))
+        }
     }
 
     /// Listens to incoming state changes and invokes the appropriate asynchronous methods in response.
