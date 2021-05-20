@@ -50,6 +50,10 @@ type Comment @model {
     createdAt: AWSDateTime!
     post: Post @connection(name: "PostComment")
 }
+
+type CustomerOrder @model @key {
+
+}
 ```
 
 4. `amplify push`

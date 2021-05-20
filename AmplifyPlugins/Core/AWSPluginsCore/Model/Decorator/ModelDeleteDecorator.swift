@@ -26,23 +26,22 @@ public struct ModelDeleteDecorator: ModelBasedGraphQLDocumentDecorator {
                          modelSchema: ModelSchema) -> SingleDirectiveGraphQLDocument {
         var inputs = document.inputs
 
-        if case .mutation = document.operationType {
-            if let customPrimaryKeys = modelSchema.customPrimaryIndexFields {
-                var objectMap = [String: Any?]()
-                // let graphQLInput = model.graphQLInputForMutation(modelSchema)
-                for key in customPrimaryKeys {
-                    objectMap[key] = model[key]
-                }
-                inputs["input"] = GraphQLDocumentInput(type: "\(document.name.pascalCased())Input!",
-                                                       value: .object(objectMap))
-
-            } else {
-                inputs["input"] = GraphQLDocumentInput(type: "\(document.name.pascalCased())Input!",
-                                                       value: .object(["id": model.id]))
+        // we know this is a delete mutation, because that's how it's used
+        
+        if let customPrimaryKeys = modelSchema.customPrimaryIndexFields {
+            var objectMap = [String: Any?]()
+            // let graphQLInput = model.graphQLInputForMutation(modelSchema)
+            for key in customPrimaryKeys {
+                objectMap[key] = model[key]
             }
-        } else if case .query = document.operationType {
-            inputs["id"] = GraphQLDocumentInput(type: "ID!", value: .scalar(model.id))
+            inputs["input"] = GraphQLDocumentInput(type: "\(document.name.pascalCased())Input!",
+                                                   value: .object(objectMap))
+
+        } else {
+            inputs["input"] = GraphQLDocumentInput(type: "\(document.name.pascalCased())Input!",
+                                                   value: .object(["id": model.id]))
         }
+    
 
         return document.copy(inputs: inputs)
     }

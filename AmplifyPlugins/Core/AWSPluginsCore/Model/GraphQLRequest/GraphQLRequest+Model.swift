@@ -104,6 +104,7 @@ protocol ModelGraphQLRequestFactory {
     static func delete<M: Model>(_ model: M,
                                  where predicate: QueryPredicate?) -> GraphQLRequest<M>
 
+    static func delete<M: Model>(modelType: M.Type, byId: String) -> GraphQLRequest<M>
     // MARK: Subscription
 
     /// Creates a `GraphQLRequest` that represents a subscription of a given `type` for a `model` type.
@@ -180,9 +181,9 @@ extension GraphQLRequest: ModelGraphQLRequestFactory {
 
         switch type {
         case .create:
-            documentBuilder.add(decorator: ModelDecorator(model: model))
+            documentBuilder.add(decorator: ModelDecorator(model: model, type: type))
         case .delete:
-            documentBuilder.add(decorator: ModelDeleteDecorator(model: model))
+            documentBuilder.add(decorator: ModelDecorator(model: model, type: type))
             if let predicate = predicate {
                 documentBuilder.add(decorator: FilterDecorator(filter: predicate.graphQLFilter(for: modelSchema)))
             }

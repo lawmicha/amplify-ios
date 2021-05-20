@@ -1945,15 +1945,15 @@
 		212CE6FF23E9E938007D8E71 /* Decorator */ = {
 			isa = PBXGroup;
 			children = (
-				9786E16A264C529000EC20F9 /* ModelDeleteDecorator.swift */,
+				21A3FDB024630D9800E76120 /* AuthRuleDecorator.swift */,
 				212CE70723E9E990007D8E71 /* ConflictResolutionDecorator.swift */,
 				212CE71223E9F2ED007D8E71 /* DirectiveNameDecorator.swift */,
 				212CE70823E9E990007D8E71 /* FilterDecorator.swift */,
 				219A888023EB629800BBC5F2 /* ModelBasedGraphQLDocumentDecorator.swift */,
 				212CE70A23E9E991007D8E71 /* ModelDecorator.swift */,
+				9786E16A264C529000EC20F9 /* ModelDeleteDecorator.swift */,
 				212CE70623E9E990007D8E71 /* ModelIdDecorator.swift */,
 				212CE70923E9E991007D8E71 /* PaginationDecorator.swift */,
-				21A3FDB024630D9800E76120 /* AuthRuleDecorator.swift */,
 			);
 			path = Decorator;
 			sourceTree = "<group>";

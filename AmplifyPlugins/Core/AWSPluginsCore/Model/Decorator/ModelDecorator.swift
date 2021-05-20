@@ -14,9 +14,10 @@ import Amplify
 public struct ModelDecorator: ModelBasedGraphQLDocumentDecorator {
 
     private let model: Model
-
-    public init(model: Model) {
+    private let type: GraphQLMutationType
+    public init(model: Model, type: GraphQLMutationType) {
         self.model = model
+        self.type = type
     }
 
     public func decorate(_ document: SingleDirectiveGraphQLDocument,
@@ -27,24 +28,45 @@ public struct ModelDecorator: ModelBasedGraphQLDocumentDecorator {
     public func decorate(_ document: SingleDirectiveGraphQLDocument,
                          modelSchema: ModelSchema) -> SingleDirectiveGraphQLDocument {
         var inputs = document.inputs
-        var graphQLInput = model.graphQLInputForMutation(modelSchema)
+        
+        if type == .delete {
+            if let customPrimaryKeys = modelSchema.customPrimaryIndexFields {
+                var objectMap = [String: Any?]()
+                // let graphQLInput = model.graphQLInputForMutation(modelSchema)
+                for key in customPrimaryKeys {
+                    objectMap[key] = model[key]
+                }
+                //
+                inputs["input"] = GraphQLDocumentInput(type: "\(document.name.pascalCased())Input!",
+                                                       value: .object(objectMap))
+                
+                return document.copy(inputs: inputs)
+            } else {
+                inputs["input"] = GraphQLDocumentInput(type: "\(document.name.pascalCased())Input!",
+                value: .object(["id": id]))
+            }
+            
+        } else {
+            var graphQLInput = model.graphQLInputForMutation(modelSchema)
 
-        if !modelSchema.authRules.isEmpty {
-            modelSchema.authRules.forEach { authRule in
-                if authRule.allow == .owner {
-                    let ownerField = authRule.getOwnerFieldOrDefault()
-                    graphQLInput = graphQLInput.filter { (field, value) -> Bool in
-                        if field == ownerField, value == nil {
-                            return false
+            if !modelSchema.authRules.isEmpty {
+                modelSchema.authRules.forEach { authRule in
+                    if authRule.allow == .owner {
+                        let ownerField = authRule.getOwnerFieldOrDefault()
+                        graphQLInput = graphQLInput.filter { (field, value) -> Bool in
+                            if field == ownerField, value == nil {
+                                return false
+                            }
+                            return true
                         }
-                        return true
                     }
                 }
             }
-        }
 
-        inputs["input"] = GraphQLDocumentInput(type: "\(document.name.pascalCased())Input!",
-            value: .object(graphQLInput))
-        return document.copy(inputs: inputs)
+            inputs["input"] = GraphQLDocumentInput(type: "\(document.name.pascalCased())Input!",
+                value: .object(graphQLInput))
+            return document.copy(inputs: inputs)
+        }
+        
     }
 }
