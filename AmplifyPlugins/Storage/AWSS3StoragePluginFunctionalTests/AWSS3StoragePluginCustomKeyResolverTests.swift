@@ -13,7 +13,7 @@ import AWSS3StoragePlugin
 class AWSS3StoragePluginCustomKeyResolverTests: AWSS3StoragePluginTestBase {
 
     // This mock resolver shows how to perform an upload to the `.guest` access level with a custom prefix value.
-    struct MockGuestOverrideKeyResolver: AWSS3PluginCustomKeyResolver {
+    struct MockGuestOverridePrefixResolver: AWSS3PluginCustomPrefixResolver {
         func resolvePrefix(for accessLevel: StorageAccessLevel,
                            targetIdentityId: String?) -> Result<String, StorageError> {
             switch accessLevel {
@@ -41,8 +41,8 @@ class AWSS3StoragePluginCustomKeyResolverTests: AWSS3StoragePluginTestBase {
         let data = key.data(using: .utf8)!
         let uploadCompleted = expectation(description: "upload completed")
 
-        let mockKeyResolver = AWSS3PluginOptions(customKeyResolver: MockGuestOverrideKeyResolver())
-        let uploadOptions = StorageUploadDataRequest.Options(pluginOptions: mockKeyResolver)
+        let mockPrefixResolver = AWSS3PluginOptions(customPrefixResolver: MockGuestOverridePrefixResolver())
+        let uploadOptions = StorageUploadDataRequest.Options(pluginOptions: mockPrefixResolver)
         _ = Amplify.Storage.uploadData(key: key, data: data, options: uploadOptions) { event in
             switch event {
             case .success:
@@ -54,7 +54,7 @@ class AWSS3StoragePluginCustomKeyResolverTests: AWSS3StoragePluginTestBase {
         wait(for: [uploadCompleted], timeout: TestCommonConstants.networkTimeout)
 
         let listCompleted = expectation(description: "list completed")
-        let listOptions = StorageListRequest.Options(path: key, pluginOptions: mockKeyResolver)
+        let listOptions = StorageListRequest.Options(path: key, pluginOptions: mockPrefixResolver)
         var resultItem: StorageListResult.Item?
         _ = Amplify.Storage.list(options: listOptions) { event in
             switch event {
@@ -77,7 +77,7 @@ class AWSS3StoragePluginCustomKeyResolverTests: AWSS3StoragePluginTestBase {
         XCTAssertEqual(item.key, key)
         let downloadCompleted = expectation(description: "download completed")
 
-        let downloadOptions = StorageDownloadDataRequest.Options(pluginOptions: mockKeyResolver)
+        let downloadOptions = StorageDownloadDataRequest.Options(pluginOptions: mockPrefixResolver)
         _ = Amplify.Storage.downloadData(key: item.key, options: downloadOptions) { event in
             switch event {
             case .success(let data):
@@ -104,7 +104,7 @@ class AWSS3StoragePluginCustomKeyResolverTests: AWSS3StoragePluginTestBase {
         let data = key.data(using: .utf8)!
         let uploadCompleted = expectation(description: "upload completed")
 
-        let mockKeyResolver = AWSS3PluginOptions(customKeyResolver: MockGuestOverrideKeyResolver())
+        let mockKeyResolver = AWSS3PluginOptions(customPrefixResolver: MockGuestOverridePrefixResolver())
         let uploadOptions = StorageUploadDataRequest.Options(pluginOptions: mockKeyResolver)
         _ = Amplify.Storage.uploadData(key: key, data: data, options: uploadOptions) { event in
             switch event {

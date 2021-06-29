@@ -16,14 +16,17 @@ public class AWSS3StorageListOperation: AmplifyOperation<
     StorageError
 >, StorageListOperation {
 
+    let storageConfiguration: AWSS3StoragePluginConfiguration
     let storageService: AWSS3StorageServiceBehaviour
     let authService: AWSAuthServiceBehavior
 
     init(_ request: StorageListRequest,
+         storageConfiguration: AWSS3StoragePluginConfiguration,
          storageService: AWSS3StorageServiceBehaviour,
          authService: AWSAuthServiceBehavior,
          resultListener: ResultListener?) {
 
+        self.storageConfiguration = storageConfiguration
         self.storageService = storageService
         self.authService = authService
         super.init(categoryType: .storage,
@@ -48,11 +51,12 @@ public class AWSS3StorageListOperation: AmplifyOperation<
             return
         }
 
-        let options = request.options.pluginOptions as? AWSS3PluginOptions ??
-            AWSS3PluginOptions(customKeyResolver: StorageAccessLevelAwareKeyResolver(authService: authService))
-
-        switch options.customKeyResolver.resolvePrefix(for: request.options.accessLevel,
-                                                       targetIdentityId: request.options.targetIdentityId) {
+        let options = request.options.pluginOptions as? AWSS3PluginOptions
+        let prefixResolver: AWSS3PluginCustomPrefixResolver = storageConfiguration.getPrefixResolver(
+            options: options) ?? StorageAccessLevelAwarePrefixResolver(authService: authService)
+        let prefix = prefixResolver.resolvePrefix(for: request.options.accessLevel,
+                                                  targetIdentityId: request.options.targetIdentityId)
+        switch prefix {
         case .success(let prefix):
             storageService.list(prefix: prefix, path: request.options.path) { [weak self] event in
                 self?.onServiceEvent(event: event)

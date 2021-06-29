@@ -13,8 +13,9 @@ extension StorageGetURLRequest.Options {
     ///
     /// - Parameter resolver: used to resolve the final key of the request
     /// - Returns: Request.Options object
-    public static func customKeyResolver(_ resolver: AWSS3PluginCustomKeyResolver) -> StorageGetURLRequest.Options {
-        let pluginOptions = AWSS3PluginOptions(customKeyResolver: resolver)
+    public static func customPrefixResolver(
+        _ resolver: AWSS3PluginCustomPrefixResolver) -> StorageGetURLRequest.Options {
+        let pluginOptions = AWSS3PluginOptions(customPrefixResolver: resolver)
         return StorageGetURLRequest.Options(pluginOptions: pluginOptions)
     }
 }
@@ -25,9 +26,9 @@ extension StorageDownloadDataRequest.Options {
     ///
     /// - Parameter resolver: used to resolve the final key of the request
     /// - Returns: Request.Options object
-    public static func customKeyResolver(_ resolver: AWSS3PluginCustomKeyResolver) ->
+    public static func customKeyResolver(_ resolver: AWSS3PluginCustomPrefixResolver) ->
     StorageDownloadDataRequest.Options {
-        let pluginOptions = AWSS3PluginOptions(customKeyResolver: resolver)
+        let pluginOptions = AWSS3PluginOptions(customPrefixResolver: resolver)
         return StorageDownloadDataRequest.Options(pluginOptions: pluginOptions)
     }
 }
@@ -38,9 +39,9 @@ extension StorageDownloadFileRequest.Options {
     ///
     /// - Parameter resolver: used to resolve the final key of the request
     /// - Returns: Request.Options object
-    public static func customKeyResolver(_ resolver: AWSS3PluginCustomKeyResolver) ->
+    public static func customKeyResolver(_ resolver: AWSS3PluginCustomPrefixResolver) ->
     StorageDownloadFileRequest.Options {
-        let pluginOptions = AWSS3PluginOptions(customKeyResolver: resolver)
+        let pluginOptions = AWSS3PluginOptions(customPrefixResolver: resolver)
         return StorageDownloadFileRequest.Options(pluginOptions: pluginOptions)
     }
 }
@@ -51,9 +52,9 @@ extension StorageUploadDataRequest.Options {
     ///
     /// - Parameter resolver: used to resolve the final key of the request
     /// - Returns: Request.Options object
-    public static func customKeyResolver(_ resolver: AWSS3PluginCustomKeyResolver) ->
+    public static func customKeyResolver(_ resolver: AWSS3PluginCustomPrefixResolver) ->
     StorageUploadDataRequest.Options {
-        let pluginOptions = AWSS3PluginOptions(customKeyResolver: resolver)
+        let pluginOptions = AWSS3PluginOptions(customPrefixResolver: resolver)
         return StorageUploadDataRequest.Options(pluginOptions: pluginOptions)
     }
 }
@@ -64,9 +65,9 @@ extension StorageUploadFileRequest.Options {
     ///
     /// - Parameter resolver: used to resolve the final key of the request
     /// - Returns: Request.Options object
-    public static func customKeyResolver(_ resolver: AWSS3PluginCustomKeyResolver) ->
+    public static func customKeyResolver(_ resolver: AWSS3PluginCustomPrefixResolver) ->
     StorageUploadFileRequest.Options {
-        let pluginOptions = AWSS3PluginOptions(customKeyResolver: resolver)
+        let pluginOptions = AWSS3PluginOptions(customPrefixResolver: resolver)
         return StorageUploadFileRequest.Options(pluginOptions: pluginOptions)
     }
 }
@@ -77,9 +78,9 @@ extension StorageRemoveRequest.Options {
     ///
     /// - Parameter resolver: used to resolve the final key of the request
     /// - Returns: Request.Options object
-    public static func customKeyResolver(_ resolver: AWSS3PluginCustomKeyResolver) ->
+    public static func customKeyResolver(_ resolver: AWSS3PluginCustomPrefixResolver) ->
     StorageRemoveRequest.Options {
-        let pluginOptions = AWSS3PluginOptions(customKeyResolver: resolver)
+        let pluginOptions = AWSS3PluginOptions(customPrefixResolver: resolver)
         return StorageRemoveRequest.Options(pluginOptions: pluginOptions)
     }
 }
@@ -90,9 +91,9 @@ extension StorageListRequest.Options {
     ///
     /// - Parameter resolver: used to resolve the final key of the request
     /// - Returns: Request.Options object
-    public static func customKeyResolver(_ resolver: AWSS3PluginCustomKeyResolver) ->
+    public static func customKeyResolver(_ resolver: AWSS3PluginCustomPrefixResolver) ->
     StorageListRequest.Options {
-        let pluginOptions = AWSS3PluginOptions(customKeyResolver: resolver)
+        let pluginOptions = AWSS3PluginOptions(customPrefixResolver: resolver)
         return StorageListRequest.Options(pluginOptions: pluginOptions)
     }
 }

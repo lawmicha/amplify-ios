@@ -16,14 +16,17 @@ public class AWSS3StorageRemoveOperation: AmplifyOperation<
     StorageError
 >, StorageRemoveOperation {
 
+    let storageConfiguration: AWSS3StoragePluginConfiguration
     let storageService: AWSS3StorageServiceBehaviour
     let authService: AWSAuthServiceBehavior
 
     init(_ request: StorageRemoveRequest,
+         storageConfiguration: AWSS3StoragePluginConfiguration,
          storageService: AWSS3StorageServiceBehaviour,
          authService: AWSAuthServiceBehavior,
          resultListener: ResultListener?) {
 
+        self.storageConfiguration = storageConfiguration
         self.storageService = storageService
         self.authService = authService
         super.init(categoryType: .storage,
@@ -48,10 +51,12 @@ public class AWSS3StorageRemoveOperation: AmplifyOperation<
             return
         }
 
-        let options = request.options.pluginOptions as? AWSS3PluginOptions ??
-            AWSS3PluginOptions(customKeyResolver: StorageAccessLevelAwareKeyResolver(authService: authService))
-        switch options.customKeyResolver.resolvePrefix(for: request.options.accessLevel,
-                                                       targetIdentityId: nil) {
+        let options = request.options.pluginOptions as? AWSS3PluginOptions
+        let prefixResolver: AWSS3PluginCustomPrefixResolver = storageConfiguration.getPrefixResolver(
+            options: options) ?? StorageAccessLevelAwarePrefixResolver(authService: authService)
+        let prefix = prefixResolver.resolvePrefix(for: request.options.accessLevel,
+                                                  targetIdentityId: nil)
+        switch prefix {
         case .success(let prefix):
             let serviceKey = prefix + request.key
             storageService.delete(serviceKey: serviceKey) { [weak self] event in

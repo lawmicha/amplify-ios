@@ -5,30 +5,17 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+import Foundation
 import Amplify
 import AWSPluginsCore
 
-/// Plugin specific options type
-public struct AWSS3PluginOptions {
-
-    let customKeyResolver: AWSS3PluginCustomKeyResolver
-
-    public init(customKeyResolver: AWSS3PluginCustomKeyResolver) {
-        self.customKeyResolver = customKeyResolver
-    }
-
-    public static var passThroughKeyResolver: AWSS3PluginOptions {
-        .init(customKeyResolver: PassThroughKeyResolver())
-    }
-}
-
 /// Resolves the final prefix prepended to the S3 key for a given request.
-public protocol AWSS3PluginCustomKeyResolver {
+public protocol AWSS3PluginCustomPrefixResolver {
     func resolvePrefix(for accessLevel: StorageAccessLevel, targetIdentityId: String?) -> Result<String, StorageError>
 }
 
 /// Convenience resolver. Resolves the provided key as-is, with no manipulation
-public struct PassThroughKeyResolver: AWSS3PluginCustomKeyResolver {
+public struct PassThroughPrefixResolver: AWSS3PluginCustomPrefixResolver {
     public func resolvePrefix(for accessLevel: StorageAccessLevel,
                               targetIdentityId: String?) -> Result<String, StorageError> {
         return .success("")
@@ -36,7 +23,7 @@ public struct PassThroughKeyResolver: AWSS3PluginCustomKeyResolver {
 }
 
 /// AWSS3StoragePlugin default logic
-struct StorageAccessLevelAwareKeyResolver: AWSS3PluginCustomKeyResolver {
+struct StorageAccessLevelAwarePrefixResolver: AWSS3PluginCustomPrefixResolver {
     let authService: AWSAuthServiceBehavior
 
     public init(authService: AWSAuthServiceBehavior) {

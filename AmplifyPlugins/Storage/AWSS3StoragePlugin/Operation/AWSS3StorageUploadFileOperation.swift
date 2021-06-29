@@ -17,6 +17,7 @@ public class AWSS3StorageUploadFileOperation: AmplifyInProcessReportingOperation
     StorageError
 >, StorageUploadFileOperation {
 
+    let storageConfiguration: AWSS3StoragePluginConfiguration
     let storageService: AWSS3StorageServiceBehaviour
     let authService: AWSAuthServiceBehavior
 
@@ -26,11 +27,13 @@ public class AWSS3StorageUploadFileOperation: AmplifyInProcessReportingOperation
     private let storageTaskActionQueue = DispatchQueue(label: "com.amazonaws.amplify.StorageTaskActionQueue")
 
     init(_ request: StorageUploadFileRequest,
+         storageConfiguration: AWSS3StoragePluginConfiguration,
          storageService: AWSS3StorageServiceBehaviour,
          authService: AWSAuthServiceBehavior,
          progressListener: InProcessListener?,
          resultListener: ResultListener?) {
 
+        self.storageConfiguration = storageConfiguration
         self.storageService = storageService
         self.authService = authService
         super.init(categoryType: .storage,
@@ -86,11 +89,12 @@ public class AWSS3StorageUploadFileOperation: AmplifyInProcessReportingOperation
             return
         }
 
-        let options = request.options.pluginOptions as? AWSS3PluginOptions ??
-            AWSS3PluginOptions(customKeyResolver: StorageAccessLevelAwareKeyResolver(authService: authService))
-
-        switch options.customKeyResolver.resolvePrefix(for: request.options.accessLevel,
-                                                       targetIdentityId: request.options.targetIdentityId) {
+        let options = request.options.pluginOptions as? AWSS3PluginOptions
+        let prefixResolver: AWSS3PluginCustomPrefixResolver = storageConfiguration.getPrefixResolver(
+            options: options) ?? StorageAccessLevelAwarePrefixResolver(authService: authService)
+        let prefix = prefixResolver.resolvePrefix(for: request.options.accessLevel,
+                                                  targetIdentityId: request.options.targetIdentityId)
+        switch prefix {
         case .success(let prefix):
             let serviceKey = prefix + request.key
             let serviceMetadata = StorageRequestUtils.getServiceMetadata(request.options.metadata)
