@@ -37,12 +37,12 @@ class AWSGraphQLSubscriptionOperationCancelTests: XCTestCase {
 
         do {
             let endpointConfig = [apiName: try AWSAPICategoryPluginConfiguration.EndpointConfig(
-                name: apiName,
-                baseURL: baseURL,
-                region: region,
-                authorizationType: AWSAuthorizationType.none,
-                endpointType: .graphQL,
-                apiAuthProviderFactory: APIAuthProviderFactory())]
+                                    name: apiName,
+                                    baseURL: baseURL,
+                                    region: region,
+                                    authorizationType: AWSAuthorizationType.none,
+                                    endpointType: .graphQL,
+                                    apiAuthProviderFactory: APIAuthProviderFactory())]
             let pluginConfig = AWSAPICategoryPluginConfiguration(endpoints: endpointConfig)
             self.pluginConfig = pluginConfig
 
@@ -65,63 +65,73 @@ class AWSGraphQLSubscriptionOperationCancelTests: XCTestCase {
         }
     }
 
+    @available(iOS 13.0, *)
     func testCancelSendsCompletion() {
-        let mockSubscriptionConnectionFactory = MockSubscriptionConnectionFactory(onGetOrCreateConnection: { _, _, _, _ in
-            return MockSubscriptionConnection(onSubscribe: { (_, _, eventHandler) -> SubscriptionItem in
-                let item = SubscriptionItem(requestString: "", variables: nil, eventHandler: { _, _ in
+        let measureOptions = XCTMeasureOptions.default
+        measureOptions.iterationCount = 100_000
+
+        measure(options: measureOptions) {
+            let mockSubscriptionConnectionFactory = MockSubscriptionConnectionFactory(onGetOrCreateConnection: { _, _, _, _ in
+                return MockSubscriptionConnection(onSubscribe: { (_, _, eventHandler) -> SubscriptionItem in
+                    let item = SubscriptionItem(requestString: "", variables: nil, eventHandler: { _, _ in
+                    })
+                    eventHandler(.connection(.connecting), item)
+                    return item
+                }, onUnsubscribe: {_ in
                 })
-                eventHandler(.connection(.connecting), item)
-                return item
-            }, onUnsubscribe: {_ in
             })
-        })
-        setUp(subscriptionConnectionFactory: mockSubscriptionConnectionFactory)
+            setUp(subscriptionConnectionFactory: mockSubscriptionConnectionFactory)
 
-        let request = GraphQLRequest(apiName: apiName,
-                                     document: testDocument,
-                                     variables: nil,
-                                     responseType: JSONValue.self)
+            let request = GraphQLRequest(apiName: apiName,
+                                         document: testDocument,
+                                         variables: nil,
+                                         responseType: JSONValue.self)
 
-        let receivedCompletion = expectation(description: "Received completion")
-        let receivedFailure = expectation(description: "Received failure")
-        receivedFailure.isInverted = true
-        let receivedValueConnecting = expectation(description: "Received value for connecting")
-        let receivedValueDisconnected = expectation(description: "Received value for disconnected")
+            let receivedCompletion = expectation(description: "Received completion")
+            let receivedFailure = expectation(description: "Received failure")
+            receivedFailure.isInverted = true
+            let receivedValueConnecting = expectation(description: "Received value for connecting")
+            let receivedValueDisconnected = expectation(description: "Received value for disconnected")
 
-        let valueListener: GraphQLSubscriptionOperation<JSONValue>.InProcessListener = { value in
-            switch value {
-            case .connection(let state):
-                switch state {
-                case .connecting:
-                    receivedValueConnecting.fulfill()
-                case .disconnected:
-                    receivedValueDisconnected.fulfill()
+            let valueListener: GraphQLSubscriptionOperation<JSONValue>.InProcessListener = { value in
+                switch value {
+                case .connection(let state):
+                    switch state {
+                    case .connecting:
+                        receivedValueConnecting.fulfill()
+                    case .disconnected:
+                        receivedValueDisconnected.fulfill()
+                    default:
+                        XCTFail("Unexpected value on value listener: \(state)")
+                    }
                 default:
-                    XCTFail("Unexpected value on value listener: \(state)")
+                    XCTFail("Unexpected value on on value listener: \(value)")
                 }
-            default:
-                XCTFail("Unexpected value on on value listener: \(value)")
+            }
+
+            let completionListener: GraphQLSubscriptionOperation<JSONValue>.ResultListener = { result in
+                switch result {
+                case .failure:
+                    receivedFailure.fulfill()
+                case .success:
+                    receivedCompletion.fulfill()
+                }
+            }
+
+            let operation = apiPlugin.subscribe(
+                request: request,
+                valueListener: valueListener,
+                completionListener: completionListener
+            )
+            wait(for: [receivedValueConnecting], timeout: 0.3)
+            operation.cancel()
+            XCTAssert(operation.isCancelled)
+            waitForExpectations(timeout: 0.01) { error in
+                if let error = error {
+                    print("ERROR: \(error.localizedDescription)")
+                }
             }
         }
-
-        let completionListener: GraphQLSubscriptionOperation<JSONValue>.ResultListener = { result in
-            switch result {
-            case .failure:
-                receivedFailure.fulfill()
-            case .success:
-                receivedCompletion.fulfill()
-            }
-        }
-
-        let operation = apiPlugin.subscribe(
-            request: request,
-            valueListener: valueListener,
-            completionListener: completionListener
-        )
-        wait(for: [receivedValueConnecting], timeout: 0.3)
-        operation.cancel()
-        XCTAssert(operation.isCancelled)
-        waitForExpectations(timeout: 0.3)
     }
 
     func testFailureOnConnection() {
