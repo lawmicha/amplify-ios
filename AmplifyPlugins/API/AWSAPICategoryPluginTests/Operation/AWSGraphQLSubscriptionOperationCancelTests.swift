@@ -68,7 +68,7 @@ class AWSGraphQLSubscriptionOperationCancelTests: XCTestCase {
     @available(iOS 13.0, *)
     func testCancelSendsCompletion() {
         let measureOptions = XCTMeasureOptions.default
-        measureOptions.iterationCount = 100_000
+        measureOptions.iterationCount = 10_000
 
         measure(options: measureOptions) {
             let mockSubscriptionConnectionFactory = MockSubscriptionConnectionFactory(onGetOrCreateConnection: { _, _, _, _ in
@@ -126,9 +126,9 @@ class AWSGraphQLSubscriptionOperationCancelTests: XCTestCase {
             wait(for: [receivedValueConnecting], timeout: 0.3)
             operation.cancel()
             XCTAssert(operation.isCancelled)
-            waitForExpectations(timeout: 0.01) { error in
+            waitForExpectations(timeout: 0.3) { error in
                 if let error = error {
-                    print("ERROR: \(error.localizedDescription)")
+                    print("BOOM: \(error.localizedDescription) :BANG")
                 }
             }
         }
