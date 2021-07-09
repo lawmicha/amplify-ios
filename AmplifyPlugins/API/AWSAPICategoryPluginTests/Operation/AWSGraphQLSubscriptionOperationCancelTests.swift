@@ -68,7 +68,7 @@ class AWSGraphQLSubscriptionOperationCancelTests: XCTestCase {
     @available(iOS 13.0, *)
     func testCancelSendsCompletion() {
         let measureOptions = XCTMeasureOptions.default
-        measureOptions.iterationCount = 10_000
+        measureOptions.iterationCount = 5_000
 
         measure(options: measureOptions) {
             let mockSubscriptionConnectionFactory = MockSubscriptionConnectionFactory(onGetOrCreateConnection: { _, _, _, _ in
