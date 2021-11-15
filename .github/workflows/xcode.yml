@@ -1,8 +1,10 @@
 name: integ-testing-actions
 on:
   push:
-    branches:    
-      - chore/datastore-integ-tests
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 permissions:
       id-token: write
       contents: write   
