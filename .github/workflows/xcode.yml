@@ -20,7 +20,7 @@ jobs:
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@master
         with:
-          role-to-assume: arn:aws:iam::949864547486:role/gh_action_s3
+          role-to-assume: arn:aws:iam::949864547486:role/gh-actions-s3-role
           role-session-name: integrolesession
           aws-region: us-west-1
       - name: Copy configuration
