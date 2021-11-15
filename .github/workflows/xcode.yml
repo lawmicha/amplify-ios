@@ -1,4 +1,4 @@
-name: integ-testing-actions
+name: integ-testing-action2
 on:
   push:
     branches: [ main ]
