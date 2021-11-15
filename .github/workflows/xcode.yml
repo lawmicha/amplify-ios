@@ -21,7 +21,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::949864547486:role/gh-actions-s3-role
-          role-session-name: integrolesession
           aws-region: us-west-1
       - name: Copy configuration
         run: aws s3 cp s3://testconfiguration2/testconfiguration/ ~/.aws-amplify/amplify-ios/testconfiguration/ --recursive
