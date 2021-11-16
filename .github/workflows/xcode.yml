@@ -29,8 +29,8 @@ jobs:
         run: ls ~/.aws-amplify/amplify-ios/testconfiguration/
       - name: CocoaPod Install in DataStore
         run: cd ./AmplifyPlugins/DataStore/ && pod install && ls
-      - name: Build Auth
+      - name: Build DataStore
         run: cd ./AmplifyPlugins/DataStore/ && xcodebuild build-for-testing -workspace DataStoreCategoryPlugin.xcworkspace -scheme AWSDataStoreCategoryPluginAuthIntegrationTests -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 13,OS=15.0' | xcpretty && exit ${PIPESTATUS[0]} 
-      - name: Test amplify auth
+      - name: Test amplify datastore
         run: cd ./AmplifyPlugins/DataStore/ && xcodebuild test -workspace DataStoreCategoryPlugin.xcworkspace -scheme AWSDataStoreCategoryPluginAuthIntegrationTests -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 13,OS=15.0' | xcpretty --simple --color --report junit  && exit ${PIPESTATUS[0]} 
       
