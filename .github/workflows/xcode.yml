@@ -1,0 +1,36 @@
+name: integ-testing-action
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  run-integration-test:
+    runs-on: macos-latest
+    permissions:
+      id-token: write
+      contents: read   
+    steps:
+      - uses: actions/checkout@v2
+      - name: Xcode version
+        run: /usr/bin/xcodebuild -version
+      - name: Make directory
+        run: mkdir -p ~/.aws-amplify/amplify-ios/testconfiguration/
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-session-name: GithubActionsSession
+      - name: Copy configuration
+        run: aws s3 cp s3://${{ secrets.S3_TESTCONFIGURATION }}/testconfiguration/ ~/.aws-amplify/amplify-ios/testconfiguration/ --recursive
+      - name: List the copied configurations
+        run: ls ~/.aws-amplify/amplify-ios/testconfiguration/
+      - name: CocoaPod Install in DataStore
+        run: cd ./AmplifyPlugins/DataStore/ && pod install && ls
+      - name: Build DataStore
+        run: cd ./AmplifyPlugins/DataStore/ && xcodebuild build-for-testing -workspace DataStoreCategoryPlugin.xcworkspace -scheme AWSDataStoreCategoryPluginIntegrationTests -sdk iphonesimulator -destination 'platform=iOS Simulator,name=IPhone 12' | xcpretty && exit ${PIPESTATUS[0]} 
+      - name: Test amplify datastore
+        run: cd ./AmplifyPlugins/DataStore/ && xcodebuild test -workspace DataStoreCategoryPlugin.xcworkspace -scheme AWSDataStoreCategoryPluginIntegrationTests -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 12' | xcpretty --simple --color --report junit  && exit ${PIPESTATUS[0]} 
+      
