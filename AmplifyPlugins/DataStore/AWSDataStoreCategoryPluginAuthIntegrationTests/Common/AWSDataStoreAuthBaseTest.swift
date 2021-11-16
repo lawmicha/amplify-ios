@@ -16,41 +16,17 @@ import AWSPluginsCore
 @testable import Amplify
 @testable import AmplifyTestCommon
 
-class AWSDataStoreMultiAuthBaseTest: XCTestCase {
+class AWSDataStoreAuthBaseTest: XCTestCase {
     var requests: Set<AnyCancellable> = []
 
+    var amplifyConfig: AmplifyConfiguration!
     var user1: TestUser?
     var user2: TestUser?
-
-    static let amplifyConfigurationFile = "testconfiguration/AWSDataStoreCategoryPluginMultiAuthIntegrationTests-amplifyconfiguration"
-    static let credentialsFile = "testconfiguration/AWSDataStoreCategoryPluginMultiAuthIntegrationTests-credentials"
-
     var authRecorderInterceptor: AuthRecorderInterceptor!
 
     override func setUp() {
         continueAfterFailure = false
-
         Amplify.Logging.logLevel = .verbose
-
-        do {
-            let credentials = try TestConfigHelper.retrieveCredentials(forResource: Self.credentialsFile)
-
-            guard let user1 = credentials["user1"],
-                  let user2 = credentials["user2"],
-                  let passwordUser1 = credentials["passwordUser1"],
-                  let passwordUser2 = credentials["passwordUser2"] else {
-                XCTFail("Invalid \(Self.credentialsFile).json data")
-                return
-            }
-
-            self.user1 = TestUser(username: user1, password: passwordUser1)
-            self.user2 = TestUser(username: user2, password: passwordUser2)
-
-            authRecorderInterceptor = AuthRecorderInterceptor()
-
-        } catch {
-            XCTFail("Error during setup: \(error)")
-        }
     }
 
     override func tearDownWithError() throws {
@@ -82,11 +58,59 @@ class AWSDataStoreMultiAuthBaseTest: XCTestCase {
         )
     }
 
+    func setupCredentials(forAuthStrategy authModeStrategy: AuthModeStrategyType) {
+        let amplifyConfigurationFile: String
+        let credentialsFile: String
+
+        switch authModeStrategy {
+        case .default:
+            amplifyConfigurationFile = "testconfiguration/AWSDataStoreCategoryPluginAuthIntegrationTests-amplifyconfiguration"
+            credentialsFile = "testconfiguration/AWSDataStoreCategoryPluginAuthIntegrationTests-credentials"
+        case .multiAuth:
+            amplifyConfigurationFile = "testconfiguration/AWSDataStoreCategoryPluginMultiAuthIntegrationTests-amplifyconfiguration"
+            credentialsFile = "testconfiguration/AWSDataStoreCategoryPluginMultiAuthIntegrationTests-credentials"
+        }
+
+        do {
+            let credentials = try TestConfigHelper.retrieveCredentials(forResource: credentialsFile)
+
+            guard let user1 = credentials["user1"],
+                  let user2 = credentials["user2"],
+                  let passwordUser1 = credentials["passwordUser1"],
+                  let passwordUser2 = credentials["passwordUser2"] else {
+                XCTFail("Invalid \(credentialsFile).json data")
+                return
+            }
+
+            self.user1 = TestUser(username: user1, password: passwordUser1)
+            self.user2 = TestUser(username: user2, password: passwordUser2)
+
+            authRecorderInterceptor = AuthRecorderInterceptor()
+
+            amplifyConfig = try TestConfigHelper.retrieveAmplifyConfiguration(forResource: amplifyConfigurationFile)
+
+        } catch {
+            XCTFail("Error during setup: \(error)")
+        }
+
+    }
+
+    func apiEndpointName() throws -> String {
+        guard let apiPlugin = amplifyConfig.api?.plugins["awsAPIPlugin"],
+              case .object(let value) = apiPlugin else {
+            throw APIError.invalidConfiguration("API endpoint not found.", "Check the provided configuration")
+        }
+        return value.keys.first!
+    }
+
     /// Setup DataStore with given models
     /// - Parameter models: DataStore models
-    func setup(withModels models: AmplifyModelRegistration) {
+    func setup(withModels models: AmplifyModelRegistration,
+               authStrategy: AuthModeStrategyType) {
         do {
-            let datastoreConfig = DataStoreConfiguration.custom(authModeStrategy: .multiAuth)
+            setupCredentials(forAuthStrategy: authStrategy)
+
+            let datastoreConfig = DataStoreConfiguration.custom(authModeStrategy: authStrategy)
 
             try Amplify.add(plugin: AWSDataStorePlugin(modelRegistration: models,
                                                        configuration: datastoreConfig))
@@ -96,11 +120,11 @@ class AWSDataStoreMultiAuthBaseTest: XCTestCase {
             try Amplify.add(plugin: apiPlugin)
             try Amplify.add(plugin: AWSCognitoAuthPlugin())
 
-            let amplifyConfig = try TestConfigHelper.retrieveAmplifyConfiguration(forResource: Self.amplifyConfigurationFile)
             try Amplify.configure(amplifyConfig)
 
             // register auth recorder interceptor
-            try apiPlugin.add(interceptor: authRecorderInterceptor, for: "datastoreintegtestmu")
+            let apiName = try apiEndpointName()
+            try apiPlugin.add(interceptor: authRecorderInterceptor, for: apiName)
 
             signOut()
             clearDataStore()
@@ -122,7 +146,7 @@ class AWSDataStoreMultiAuthBaseTest: XCTestCase {
 }
 
 // MARK: - Auth helpers
-extension AWSDataStoreMultiAuthBaseTest {
+extension AWSDataStoreAuthBaseTest {
     /// Signin given user
     /// - Parameter user
     func signIn(user: TestUser?) {
@@ -159,10 +183,112 @@ extension AWSDataStoreMultiAuthBaseTest {
         }
         wait(for: [signoutInvoked], timeout: TestCommonConstants.networkTimeout)
     }
+
+    func isSignedIn() -> Bool {
+        let checkIsSignedInCompleted = expectation(description: "retrieve auth session completed")
+        var resultOptional: Bool?
+        _ = Amplify.Auth.fetchAuthSession { event in
+            switch event {
+            case .success(let authSession):
+                resultOptional = authSession.isSignedIn
+                checkIsSignedInCompleted.fulfill()
+            case .failure(let error):
+                fatalError("Failed to get auth session \(error)")
+            }
+        }
+        wait(for: [checkIsSignedInCompleted], timeout: TestCommonConstants.networkTimeout)
+        guard let result = resultOptional else {
+            XCTFail("Could not get isSignedIn for user")
+            return false
+        }
+
+        return result
+    }
+
+    func getUserSub() -> String {
+        let retrieveUserSubCompleted = expectation(description: "retrieve userSub completed")
+        var resultOptional: String?
+        _ = Amplify.Auth.fetchAuthSession(listener: { event in
+            switch event {
+            case .success(let authSession):
+                guard let cognitoAuthSession = authSession as? AuthCognitoIdentityProvider else {
+                    XCTFail("Could not get auth session as AuthCognitoIdentityProvider")
+                    return
+                }
+                switch cognitoAuthSession.getUserSub() {
+                case .success(let userSub):
+                    resultOptional = userSub
+                    retrieveUserSubCompleted.fulfill()
+                case .failure(let error):
+                    XCTFail("Failed to get auth session \(error)")
+                }
+            case .failure(let error):
+                XCTFail("Failed to get auth session \(error)")
+            }
+        })
+        wait(for: [retrieveUserSubCompleted], timeout: TestCommonConstants.networkTimeout)
+        guard let result = resultOptional else {
+            XCTFail("Could not get userSub for user")
+            return ""
+        }
+
+        return result
+    }
+
+    func getIdentityId() -> String {
+        let retrieveIdentityCompleted = expectation(description: "retrieve identity completed")
+        var resultOptional: String?
+        _ = Amplify.Auth.fetchAuthSession(listener: { event in
+            switch event {
+            case .success(let authSession):
+                guard let cognitoAuthSession = authSession as? AuthCognitoIdentityProvider else {
+                    XCTFail("Could not get auth session as AuthCognitoIdentityProvider")
+                    return
+                }
+                switch cognitoAuthSession.getIdentityId() {
+                case .success(let identityId):
+                    resultOptional = identityId
+                    retrieveIdentityCompleted.fulfill()
+                case .failure(let error):
+                    XCTFail("Failed to get auth session \(error)")
+                }
+            case .failure(let error):
+                XCTFail("Failed to get auth session \(error)")
+            }
+        })
+        wait(for: [retrieveIdentityCompleted], timeout: TestCommonConstants.networkTimeout)
+        guard let result = resultOptional else {
+            XCTFail("Could not get identityId for user")
+            return ""
+        }
+
+        return result
+    }
+
+    func queryModel<M: Model>(_ model: M.Type,
+                              byId id: String,
+                              file: StaticString = #file,
+                              line: UInt = #line) -> M? {
+        var queriedModel: M?
+        let queriedInvoked = expectation(description: "Model queried")
+
+        Amplify.DataStore.query(M.self, byId: id) { result in
+            switch result {
+            case .success(let model):
+                queriedModel = model
+                queriedInvoked.fulfill()
+            case .failure(let error):
+                XCTFail("Failed to query model \(error)", file: file, line: line)
+            }
+        }
+
+        wait(for: [queriedInvoked], timeout: TestCommonConstants.networkTimeout)
+        return queriedModel
+    }
 }
 
 // MARK: - DataStore behavior assert helpers
-extension AWSDataStoreMultiAuthBaseTest {
+extension AWSDataStoreAuthBaseTest {
     /// Asserts that query with given `Model` succeeds
     /// - Parameters:
     ///   - modelType: model type
@@ -307,7 +433,7 @@ extension AWSDataStoreMultiAuthBaseTest {
 }
 
 // MARK: - Expectations
-extension AWSDataStoreMultiAuthBaseTest {
+extension AWSDataStoreAuthBaseTest {
     struct MultiAuthTestExpectations {
         var subscriptionsEstablished: XCTestExpectation
         var modelsSynced: XCTestExpectation
