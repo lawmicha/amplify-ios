@@ -18,10 +18,9 @@ class AWSS3StoragePluginKeyResolverTests: XCTestCase {
 
     override func setUp() {
         do {
-            Amplify.reset()
             try Amplify.add(plugin: AWSCognitoAuthPlugin())
             try Amplify.add(plugin: AWSS3StoragePlugin(
-                                configuration: .prefixResolver(MockGuestOverridePrefixResolver())))
+                configuration: .prefixResolver(MockGuestOverridePrefixResolver())))
             let amplifyConfig = try TestConfigHelper.retrieveAmplifyConfiguration(
                 forResource: AWSS3StoragePluginTestBase.amplifyConfiguration)
             try Amplify.configure(amplifyConfig)
@@ -37,14 +36,15 @@ class AWSS3StoragePluginKeyResolverTests: XCTestCase {
     // This mock resolver shows how to perform an upload to the `.guest` access level with a custom prefix value.
     struct MockGuestOverridePrefixResolver: AWSS3PluginPrefixResolver {
         func resolvePrefix(for accessLevel: StorageAccessLevel,
-                           targetIdentityId: String?) -> Result<String, StorageError> {
+                           targetIdentityId: String?,
+                           completion: @escaping (Result<String, StorageError>) -> Void) {
             switch accessLevel {
             case .guest:
-                return .success("public/customPublic/")
+                completion(.success("public/customPublic/"))
             case .protected:
-                return .failure(.configuration("`.protected` StorageAccessLevel is not used", "", nil))
+                completion(.failure(.configuration("`.protected` StorageAccessLevel is not used", "", nil)))
             case .private:
-                return .failure(.configuration("`.protected` StorageAccessLevel is not used", "", nil))
+                completion(.failure(.configuration("`.protected` StorageAccessLevel is not used", "", nil)))
             }
         }
     }
