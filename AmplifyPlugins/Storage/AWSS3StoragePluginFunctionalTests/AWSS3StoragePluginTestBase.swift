@@ -83,11 +83,7 @@ class AWSS3StoragePluginTestBase: XCTestCase {
     }
 
     static func getBucketFromConfig(forResource: String) throws -> String {
-        guard let path = Bundle.main.path(forResource: forResource, ofType: "json") else {
-            throw "Could not get \(forResource).json"
-        }
-        let url = URL(fileURLWithPath: path)
-        let data = try Data(contentsOf: url)
+        let data = try TestConfigHelper.retrieve(forResource: forResource)
         let json = try JSONDecoder().decode(JSONValue.self, from: data)
         guard let bucket = json["storage"]?["plugins"]?["awsS3StoragePlugin"]?["bucket"] else {
             throw "Could not retrieve bucket from config"
