@@ -28,6 +28,16 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "21EA887228F9BC600000BA75"
+               BuildableName = "AWSAPIPluginLazyLoadTests.xctest"
+               BlueprintName = "AWSAPIPluginLazyLoadTests"
+               ReferencedContainer = "container:APIHostApp.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
