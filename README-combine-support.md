@@ -1,5 +1,7 @@
 # Combine support in Amplify
 
+Test Merge
+
 <img src="https://s3.amazonaws.com/aws-mobile-hub-images/aws-amplify-logo.png" alt="AWS Amplify" width="550" >
 
 Amplify supports iOS 13+ and macOS 10.15+, and ships with APIs that leverage Swift Concurrency (async/await) to return values. For example, the following returns an array of type `Geo.Place` with search results for coffee shops.
