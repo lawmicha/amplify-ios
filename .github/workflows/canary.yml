@@ -16,14 +16,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-13
-            xcode-version: 14.3.1
-            device: iPhone 14 Pro
-            version: 16.4
-          - os: macos-12
-            xcode-version: 14.1
-            device: iPhone 13 Pro
-            version: 16.1
           - os: macos-latest
             xcode-version: 14.3.1
             device: iPhone 14 Pro
