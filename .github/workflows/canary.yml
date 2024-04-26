@@ -28,12 +28,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install amplify-cli
-        run: npm install -g @aws-amplify/cli@12.2.0
 
-      - name: Create Sample Amplify App
-        working-directory: ${{ github.workspace }}/canaries/example
-        run: amplify init --quickstart --frontend ios
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@250fcd6a742febb1123a77a841497ccaa8b9e939 # v1.152.0
